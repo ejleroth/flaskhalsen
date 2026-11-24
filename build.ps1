@@ -41,7 +41,20 @@ Copy-Item packaging\Flaskhalsen.cmd "$out\"
 Copy-Item packaging\LAS-MIG.txt "$out\"
 Copy-Item README.md "$out\"
 
+# 4. Single-file exe as an alternative download. It asks for administrator rights on start.
+#    Note: Smart App Control still blocks it (unsigned); the zip above is the safe default.
+& $py -m pip install -q pyinstaller==6.11.1
+& $py -m PyInstaller --noconfirm --clean --onefile --uac-admin --name "Flaskhalsen-$version" `
+    --distpath dist --workpath build\pyi --specpath build\pyi `
+    --add-data "$PSScriptRoot\flaskhalsen\static;flaskhalsen\static" `
+    --add-data "$PSScriptRoot\config;config" `
+    --collect-submodules uvicorn `
+    run.py
+if ($LASTEXITCODE -ne 0) { throw "PyInstaller misslyckades" }
+
 $zip = "dist\Flaskhalsen-$version.zip"
 if (Test-Path $zip) { Remove-Item $zip }
 Compress-Archive -Path $out -DestinationPath $zip
 Write-Host "Klart: $zip ($([math]::Round((Get-Item $zip).Length / 1MB, 1)) MB)"
+$exe = "dist\Flaskhalsen-$version.exe"
+Write-Host "Klart: $exe ($([math]::Round((Get-Item $exe).Length / 1MB, 1)) MB)"

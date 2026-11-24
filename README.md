@@ -39,6 +39,8 @@ Du kan alltid välja manuellt.
 
 **Enklast:** ladda ner `Flaskhalsen-x.y.z.zip` under *Releases*, packa upp och dubbelklicka
 `Flaskhalsen.cmd`. Python följer med, inget att installera. Hårdvarukoll och diagnos fungerar direkt.
+Det finns också en enda `Flaskhalsen-x.y.z.exe` (ber om administratör), men den är inte signerad och
+blockeras om Smart App Control är på. Endast Windows 10/11, inte Linux eller macOS.
 
 - För AI-förklaringar och chatt: installera [Ollama](https://ollama.com/download) och klicka
   *Ladda ner* i AI-kortet. Appen väljer modell efter ditt grafikkort.
@@ -90,6 +92,8 @@ AI:n får aldrig gissa från råa siffror. Regelmotorn avgör *vad* som är fel,
   eftersom en nybyggd, osignerad exe saknar rykte. Det går inte ens att klicka "Kör ändå". Lösning:
   paketet innehåller i stället Pythons officiella embeddable-version (signerad av Python Software
   Foundation) och en `.cmd`-startfil. Ingen ny osignerad exe, och den startar fint med SAC påslaget.
+  Exe-filen finns kvar som alternativ för den som har SAC avstängt. Att köra den som administratör
+  hjälper inte, eftersom SAC stoppar filen innan den ens startar.
 - **LibreHardwareMonitor** kräver drivrutinen PawnIO och administratörsrättigheter. Därför fungerar
   appen även utan den.
 

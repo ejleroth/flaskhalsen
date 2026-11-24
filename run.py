@@ -20,6 +20,22 @@ os.chdir(ROOT)
 from flaskhalsen import __version__  # noqa: E402
 from flaskhalsen.app import app  # noqa: E402
 
+def open_browser(url: str) -> None:
+    """Open the UI. When we run elevated (the exe asks for admin), a plain webbrowser.open
+    would start the browser as administrator too. explorer.exe hands the URL to the
+    normal, non-elevated desktop session instead."""
+    if os.name == "nt":
+        try:
+            import ctypes
+            if ctypes.windll.shell32.IsUserAnAdmin():
+                import subprocess
+                subprocess.Popen(["explorer.exe", url])
+                return
+        except OSError:
+            pass
+    webbrowser.open(url)
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8765)
@@ -27,7 +43,7 @@ if __name__ == "__main__":
     a = ap.parse_args()
     url = f"http://127.0.0.1:{a.port}"
     if not a.no_browser:
-        threading.Timer(1.5, lambda: webbrowser.open(url)).start()
+        threading.Timer(1.5, lambda: open_browser(url)).start()
     print(f"Flaskhalsen {__version__} körs på {url}")
     print("Stäng det här fönstret för att avsluta.")
     # Pass the app object (not an import string) so it also works inside the frozen exe.
