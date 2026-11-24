@@ -94,6 +94,7 @@ def api_models():
     rec["manual"] = store.get_setting("model")
     rec["benchmark"] = store.get_setting("benchmark")
     rec["pull"] = _pull_state
+    rec["ollama"] = ollama.version()
     return rec
 
 

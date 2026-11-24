@@ -9,9 +9,13 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
+import sys
+
 ROOT = Path(__file__).resolve().parent.parent
-DATA_DIR = ROOT / "data"
 CONFIG_DIR = ROOT / "config"
+# Portable build (PyInstaller): bundled files live in _internal, but the database must
+# sit next to Flaskhalsen.exe where the user can write and find it.
+DATA_DIR = (Path(sys.executable).parent if getattr(sys, "frozen", False) else ROOT) / "data"
 
 _NO_WINDOW = 0x08000000 if os.name == "nt" else 0
 

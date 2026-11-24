@@ -124,3 +124,7 @@ input { min-width: 0; }
 .ev-summary { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
 
 footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 16px 28px 28px; color: var(--muted); font-size: 13px; max-width: 1400px; margin: 0 auto; }
+a.pill { color: inherit; text-decoration: none; border-style: dashed; }
+a.pill:hover { border-color: var(--warn); }
+.notice { border: 1px solid var(--warn); background: var(--panel-2); border-radius: 10px; padding: 12px 14px; margin: 0 0 12px; }
+.notice a { color: var(--warn); }

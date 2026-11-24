@@ -50,7 +50,9 @@ async function loadStatus() {
       <span class="pill" title="Lokal AI-motor"><span class="dot ${s.ollama ? "on" : "off"}"></span>Ollama ${s.ollama ? esc(s.ollama) : "körs inte"}</span>
       <span class="pill"><span class="dot ${s.model ? "on" : "off"}"></span>${s.model ? esc(s.model) : "Ingen modell"}</span>
       <span class="pill" title="Sensorkälla"><span class="dot ${sensorsState}"></span>${sensorsText}</span>
-      ${s.recording ? `<span class="pill"><span class="dot off"></span>Spelar in…</span>` : ""}`;
+      ${s.recording ? `<span class="pill"><span class="dot off"></span>Spelar in…</span>` : ""}
+      ${s.lhm ? "" : `<a class="pill" href="https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/releases" target="_blank" rel="noopener"
+        title="Installera LibreHardwareMonitor, kör som administratör och slå på Options → Remote Web Server (port 8085)">+ CPU-temperaturer?</a>`}`;
     return s;
   } catch (e) {
     $("#pills").innerHTML = `<span class="pill"><span class="dot off"></span>Servern svarar inte</span>`;
@@ -106,7 +108,10 @@ async function loadModels() {
           ${bench ? ` · <strong>${bench.tokens_per_second} tokens/s</strong> uppmätt` : ""}</div>
       </div>
     </div>
-    ${m.suggested_download ? `<p>Rekommenderad modell för din dator: <strong>${esc(m.suggested_download)}</strong> (~${m.tier.approx_size_gb} GB).</p>
+    ${!m.ollama ? `<div class="notice"><strong>Ollama hittades inte.</strong> AI-delen behöver den lokala AI-motorn Ollama
+      (gratis). Installera från <a href="https://ollama.com/download" target="_blank" rel="noopener">ollama.com/download</a>,
+      starta den och ladda om sidan. Hårdvarukollen och diagnosen fungerar redan utan AI.</div>` : ""}
+    ${m.ollama && m.suggested_download ? `<p>Rekommenderad modell för din dator: <strong>${esc(m.suggested_download)}</strong> (~${m.tier.approx_size_gb} GB).</p>
       <button class="primary" id="btn-pull" data-name="${esc(m.suggested_download)}">⬇ Ladda ner ${esc(m.suggested_download)}</button>` : ""}
     <div id="pull-progress"></div>
     ${m.installed.length ? `<ul class="model-list">${m.installed.map((i) => `<li><span>${esc(i.name)}</span><span>${i.size_gb} GB

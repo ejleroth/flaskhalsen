@@ -1,0 +1,19 @@
+Flaskhalsen - lokal AI-tekniker för din PC
+==========================================
+
+1. Dubbelklicka Flaskhalsen.cmd. Webbläsaren öppnas på http://127.0.0.1:8765
+   (stäng det svarta fönstret för att avsluta).
+
+2. För AI-förklaringar och chatt: installera Ollama (gratis) från
+   https://ollama.com/download och klicka sedan "Ladda ner" i AI-kortet.
+   Appen väljer modellstorlek efter ditt grafikkort. Hårdvarukollen och
+   diagnosen fungerar även utan AI.
+
+3. Valfritt, för CPU- och disktemperaturer: LibreHardwareMonitor
+   (https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/releases),
+   kör som administratör och slå på Options -> Remote Web Server (port 8085).
+
+Allt körs lokalt på din dator. Inspelningar sparas i mappen app\data.
+
+Windows SmartScreen kan varna första gången:
+klicka "Mer info" -> "Kör ändå". Källkoden finns på GitHub.

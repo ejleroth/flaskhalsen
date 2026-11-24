@@ -37,9 +37,16 @@ Du kan alltid välja manuellt.
 
 ## Installera och kör
 
-Krav: Windows 10/11, Python 3.11+, [Ollama](https://ollama.com).
-Valfritt: [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) med
-*Options → Remote Web Server* påslaget (port 8085) för CPU-temperaturer. Utan det används nvidia-smi + psutil.
+**Enklast:** ladda ner `Flaskhalsen-x.y.z.zip` under *Releases*, packa upp och dubbelklicka
+`Flaskhalsen.cmd`. Python följer med, inget att installera. Hårdvarukoll och diagnos fungerar direkt.
+
+- För AI-förklaringar och chatt: installera [Ollama](https://ollama.com/download) och klicka
+  *Ladda ner* i AI-kortet. Appen väljer modell efter ditt grafikkort.
+- Valfritt: [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) som
+  administratör med *Options → Remote Web Server* påslaget (port 8085) för CPU- och disktemperaturer.
+  Utan det används nvidia-smi + psutil.
+
+**Från källkod** (Python 3.11+): dubbelklicka `Starta Flaskhalsen.bat`, eller
 
 ```powershell
 python -m venv .venv
@@ -48,6 +55,7 @@ python -m venv .venv
 ```
 
 Öppna http://127.0.0.1:8765. Tester: `.venv\Scripts\python -m pytest`.
+Bygg zip-paketet: `powershell -ExecutionPolicy Bypass -File build.ps1`.
 
 ## Hur den fungerar
 
@@ -77,6 +85,11 @@ AI:n får aldrig gissa från råa siffror. Regelmotorn avgör *vad* som är fel,
   den startade igen.
 - **Svensk Windows.** Sensorvärden som `45,0 °C` med decimalkomma, lokaliserade händelsetexter och
   osynliga LTR-tecken i datum i loggen.
+- **Smart App Control stoppade exe-filen.** Första paketet byggdes med PyInstaller. Windows 11:s
+  Smart App Control blockerade den direkt ("En programkontrollprincip har blockerat den här filen"),
+  eftersom en nybyggd, osignerad exe saknar rykte. Det går inte ens att klicka "Kör ändå". Lösning:
+  paketet innehåller i stället Pythons officiella embeddable-version (signerad av Python Software
+  Foundation) och en `.cmd`-startfil. Ingen ny osignerad exe, och den startar fint med SAC påslaget.
 - **LibreHardwareMonitor** kräver drivrutinen PawnIO och administratörsrättigheter. Därför fungerar
   appen även utan den.
 

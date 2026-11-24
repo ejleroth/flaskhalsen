@@ -1,4 +1,7 @@
-"""Start Flaskhalsen: python run.py [--port 8765] [--no-browser]"""
+"""Start Flaskhalsen: python run.py [--port 8765] [--no-browser]
+
+Also the entry point for the portable build (Flaskhalsen.exe).
+"""
 
 import argparse
 import os
@@ -9,9 +12,13 @@ from pathlib import Path
 
 import uvicorn
 
-ROOT = Path(__file__).resolve().parent
+FROZEN = getattr(sys, "frozen", False)
+ROOT = Path(sys._MEIPASS) if FROZEN else Path(__file__).resolve().parent  # noqa: SLF001
 sys.path.insert(0, str(ROOT))
 os.chdir(ROOT)
+
+from flaskhalsen import __version__  # noqa: E402
+from flaskhalsen.app import app  # noqa: E402
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
@@ -21,5 +28,7 @@ if __name__ == "__main__":
     url = f"http://127.0.0.1:{a.port}"
     if not a.no_browser:
         threading.Timer(1.5, lambda: webbrowser.open(url)).start()
-    print(f"Flaskhalsen körs på {url}")
-    uvicorn.run("flaskhalsen.app:app", host="127.0.0.1", port=a.port, log_level="warning")
+    print(f"Flaskhalsen {__version__} körs på {url}")
+    print("Stäng det här fönstret för att avsluta.")
+    # Pass the app object (not an import string) so it also works inside the frozen exe.
+    uvicorn.run(app, host="127.0.0.1", port=a.port, log_level="warning")
