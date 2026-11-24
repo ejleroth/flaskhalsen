@@ -243,6 +243,26 @@ def _load(s):
     return (s.get("gpu.load") or 0) >= 50 or (s.get("cpu.load") or 0) >= 50
 
 
+NVME_WARN_C = 75  # most NVMe drives start throttling somewhere between ~75 and 85 °C
+NVME_CRIT_C = 85
+
+
+def rule_storage_temp(samples: list[dict]) -> list[Finding]:
+    """Hot NVMe drive. Works on a single live sample too (no recording needed)."""
+    t = _series(samples, "storage.temp_max")
+    if not t or max(t) < NVME_WARN_C:
+        return []
+    peak = max(t)
+    crit = peak >= NVME_CRIT_C
+    return [Finding("nvme_hot", "kritisk" if crit else "varning", "lagring",
+                    "NVMe-disken är för varm" if crit else "NVMe-disken är varm",
+                    f"Disktemperaturen nådde {peak:.0f} °C. De flesta NVMe-diskar stryper sin hastighet runt "
+                    f"75-85 °C, vilket ger långsamma laddningar och hack när spel läser in data.",
+                    "Montera moderkortets M.2-kylfläns (eller köp en), se till att den sitter med skyddsplasten "
+                    "borttagen, och att grafikkortet inte blåser varm luft rakt på disken. Ökat luftflöde i chassit hjälper.",
+                    {"max_temp": peak})]
+
+
 def rule_samples(samples: list[dict]) -> list[Finding]:
     out = []
     if len(samples) < 5:
@@ -322,6 +342,8 @@ def rule_samples(samples: list[dict]) -> list[Finding]:
                            f"CPU-temperaturen nådde {max(ct):.0f} °C. Många CPU:er stryper runt 95-100 °C.",
                            "Kontrollera att kylaren sitter rätt, att fläktar/pump snurrar och att kylpastan är OK.",
                            {"max_temp": max(ct)}))
+
+    out += rule_storage_temp(samples)
 
     # The namesake: what is the bottleneck?
     game = [s for s in samples if (s.get("gpu.load") is not None) and _load(s)]

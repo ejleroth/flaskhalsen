@@ -18,7 +18,7 @@ Bidrag till SweClockers-tävlingen *"Gick inte. Nu går det."* (spår: Verktyget
 | Stabilitet | Oväntade avstängningar (Kernel-Power 41) med tidpunkt då datorn faktiskt dog, blåskärmar med förklarad stoppkod, WHEA-hårdvarufel |
 | Grafikkort | Termisk strypning, effektgräns, hotspot-delta, PCIe x8 i stället för x16, drivrutinskrascher (TDR) |
 | Flaskhals | CPU- eller GPU-bunden under spel, fullt VRAM, fullt RAM |
-| System | Energisparläge, full disk, diskhälsa, avstängd växlingsfil, gamla drivrutiner/BIOS |
+| System | Energisparläge, full disk, diskhälsa, varm NVMe-disk (strypning), avstängd växlingsfil, gamla drivrutiner/BIOS |
 
 ## AI-modellen anpassar sig efter datorn
 

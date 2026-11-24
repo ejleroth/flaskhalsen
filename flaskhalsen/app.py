@@ -234,7 +234,15 @@ def api_events(refresh: bool = False):
 
 def all_findings(session_id: int | None = None):
     samples = store.samples(session_id) if session_id else latest_session_samples()
-    return rules.diagnose(get_hw(), get_events(), samples)
+    found = rules.diagnose(get_hw(), get_events(), samples)
+    if not any(f["id"] == "nvme_hot" for f in found):
+        # Disk heat shows up at idle too, so check a live reading even without a recording.
+        try:
+            live = [asdict(f) for f in rules.rule_storage_temp([sensors.sample()["metrics"]])]
+        except Exception:  # noqa: BLE001 - sensors are best effort
+            live = []
+        found = sorted(found + live, key=lambda f: rules.SEVERITY_ORDER.get(f["severity"], 9))
+    return found
 
 
 @app.get("/api/diagnose")

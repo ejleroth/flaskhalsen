@@ -174,6 +174,13 @@ def test_gpu_throttle_pcie_vram():
     assert {"gpu_thermal", "pcie_width", "vram_full"} <= found
 
 
+def test_nvme_temp_levels():
+    assert rules.rule_storage_temp([{"storage.temp_max": 60}]) == []
+    assert rules.rule_storage_temp([{"storage.temp_max": 78}])[0].severity == "varning"
+    assert rules.rule_storage_temp([{"storage.temp_max": 87}])[0].severity == "kritisk"
+    assert "nvme_hot" in ids(rules.diagnose({}, [], _samples(10, **{"storage.temp_max": 80})))
+
+
 def test_pcie_ignored_at_idle():
     s = _samples(20, **{"gpu.load": 5, "gpu.pcie_width": 16, "gpu.pcie_width_max": 16,
                         "gpu.pcie_gen": 1, "gpu.pcie_gen_max": 4})
