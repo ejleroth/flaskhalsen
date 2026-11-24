@@ -1,0 +1,38 @@
+{
+  "_comment": "Model tiers. Edit freely: the app picks the highest tier whose min_vram_gb fits usable VRAM (VRAM minus headroom_gb). Models are Ollama tags in order of preference; they should support tool calling.",
+  "headroom_gb": 1.5,
+  "tiers": [
+    {
+      "id": "tiny",
+      "label": "Liten (CPU eller svag GPU)",
+      "min_vram_gb": 0,
+      "approx_size_gb": 2.6,
+      "models": ["qwen3:4b", "llama3.2:3b"]
+    },
+    {
+      "id": "small",
+      "label": "Mellan (6-11 GB VRAM)",
+      "min_vram_gb": 5.5,
+      "approx_size_gb": 5.2,
+      "models": ["qwen3:8b", "llama3.1:8b"]
+    },
+    {
+      "id": "medium",
+      "label": "Stor (12-16 GB VRAM)",
+      "min_vram_gb": 10.5,
+      "approx_size_gb": 9.3,
+      "models": ["qwen3:14b"]
+    },
+    {
+      "id": "large",
+      "label": "Mycket stor (24 GB+ VRAM)",
+      "min_vram_gb": 20,
+      "approx_size_gb": 19,
+      "models": ["qwen3:30b", "qwen3:32b"]
+    }
+  ],
+  "cpu_only": {
+    "_comment": "With no usable GPU, the model runs from system RAM. Pick by RAM, but it will be slow.",
+    "small_min_ram_gb": 24
+  }
+}

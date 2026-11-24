@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flaskhalsen</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M12 3h8v3l-1 1v5l6 8v7a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-7l6-8V7l-1-1z' fill='%2338bdf8'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg viewBox="0 0 32 32" class="logo" aria-hidden="true"><path d="M12 3h8v3l-1 1v5l6 8v7a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-7l6-8V7l-1-1z"/><path class="liquid" d="M9.2 21h13.6v6.2H9.2z"/></svg>
+    <div>
+      <h1>Flaskhalsen</h1>
+      <p class="tag">Din lokala AI-tekniker. Hittar varför datorn hackar, kraschar eller är seg.</p>
+    </div>
+  </div>
+  <div class="pills" id="pills"></div>
+</header>
+
+<main>
+  <section class="grid two">
+    <article class="card" id="card-hw">
+      <h2>Din dator <button class="ghost small" id="btn-hw-refresh" title="Läs om hårdvaran">↻</button></h2>
+      <div id="hw" class="loading">Läser hårdvara…</div>
+    </article>
+    <article class="card" id="card-model">
+      <h2>AI-modell</h2>
+      <div id="model" class="loading">Kollar Ollama…</div>
+    </article>
+  </section>
+
+  <section class="card" id="card-diag">
+    <h2>Diagnos
+      <span class="actions">
+        <button class="ghost small" id="btn-diag-refresh">↻ Kör om</button>
+        <button class="primary" id="btn-explain">✨ Förklara med AI</button>
+      </span>
+    </h2>
+    <div id="ai-summary" class="ai-box hidden"></div>
+    <div id="findings" class="loading">Analyserar…</div>
+  </section>
+
+  <section class="card" id="card-rec">
+    <h2>Inspelning
+      <span class="actions">
+        <input id="rec-label" placeholder="Vad gör du? T.ex. Spelar CS2" maxlength="80">
+        <select id="rec-seconds">
+          <option value="60">1 min</option>
+          <option value="180" selected>3 min</option>
+          <option value="600">10 min</option>
+          <option value="1800">30 min</option>
+        </select>
+        <button class="primary" id="btn-rec">● Spela in</button>
+      </span>
+    </h2>
+    <p class="hint">Starta en inspelning och spela/kör det som strular. Flaskhalsen loggar temperaturer, last,
+      klockfrekvenser och strypning varje sekund och letar sedan efter flaskhalsen.</p>
+    <div id="rec-status"></div>
+    <div class="sessions"><label>Session: <select id="session-select"></select></label></div>
+    <div class="charts">
+      <div class="chart-box"><h3>Temperatur (°C)</h3><canvas id="ch-temp"></canvas></div>
+      <div class="chart-box"><h3>Last (%)</h3><canvas id="ch-load"></canvas></div>
+      <div class="chart-box"><h3>GPU-klocka (MHz) och effekt (W)</h3><canvas id="ch-clock"></canvas></div>
+    </div>
+    <div id="session-findings"></div>
+  </section>
+
+  <section class="grid two">
+    <article class="card" id="card-chat">
+      <h2>Fråga Flaskhalsen</h2>
+      <div id="chat-log" class="chat-log">
+        <div class="msg assistant">Hej! Jag har tillgång till din hårdvara, Windows-loggar och sensorer. Fråga t.ex.
+          <em>"Varför stängs datorn av ibland?"</em> eller <em>"Är mitt RAM rätt inställt?"</em></div>
+      </div>
+      <div class="chips" id="chips">
+        <button class="chip">Varför stängs datorn av ibland?</button>
+        <button class="chip">Är mitt RAM rätt inställt?</button>
+        <button class="chip">Vad är flaskhalsen i min dator?</button>
+      </div>
+      <form id="chat-form">
+        <input id="chat-input" placeholder="Skriv en fråga…" autocomplete="off">
+        <button class="primary" type="submit">Skicka</button>
+      </form>
+    </article>
+    <article class="card" id="card-events">
+      <h2>Windows-händelser <small>30 dagar</small></h2>
+      <div id="events" class="loading">Läser händelseloggen…</div>
+    </article>
+  </section>
+</main>
+
+<footer>
+  <span id="tokens"></span>
+  <span>Flaskhalsen <span id="ver"></span> · allt körs lokalt, ingen data lämnar datorn</span>
+</footer>
+<script src="/static/app.js"></script>
+</body>
+</html>
