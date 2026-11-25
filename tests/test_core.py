@@ -185,3 +185,49 @@ def test_pcie_ignored_at_idle():
     s = _samples(20, **{"gpu.load": 5, "gpu.pcie_width": 16, "gpu.pcie_width_max": 16,
                         "gpu.pcie_gen": 1, "gpu.pcie_gen_max": 4})
     assert "pcie_gen" not in ids(rules.diagnose({}, [], s))
+
+
+# --- before/after -----------------------------------------------------------------
+
+def test_compare_fixed_metrics_and_stability():
+    from flaskhalsen import compare
+    now = datetime(2026, 11, 28, 12, tzinfo=timezone.utc)
+    taken = now - timedelta(days=3)
+    hw_before = {"memory": {"sticks": [{"configured_speed": 2133}] * 2}}
+    before = {"id": 1, "ts": taken.timestamp(), "label": "Före XMP",
+              **compare.make_snapshot(hw_before, [{"id": "ram_xmp_off", "severity": "varning", "title": "RAM"},
+                                                  {"id": "hard_shutdowns", "severity": "kritisk", "title": "Krascher"}],
+                                      {"storage.temp_max": 87})}
+    hw_after = {"memory": {"sticks": [{"configured_speed": 3200}] * 2}}
+    ev = [{"t": (taken - timedelta(days=d)).isoformat(), "cat": "crash"} for d in (1, 5, 9, 20)]
+    c = compare.compare(before, [{"id": "hard_shutdowns", "severity": "kritisk", "title": "Krascher"}],
+                        compare.measure(hw_after, {"storage.temp_max": 61}), ev, now=now)
+    assert [f["id"] for f in c["fixed"]] == ["ram_xmp_off"]
+    assert c["remaining"][0]["history"] is True
+    m = {x["key"]: x for x in c["metrics"]}
+    assert m["ram_speed"]["verdict"] == "better" and m["storage.temp_max"]["verdict"] == "better"
+    crash = c["stability"][0]
+    assert crash["before"]["count"] == 4 and crash["after"]["count"] == 0 and crash["verdict"] == "better"
+    # Right after the snapshot there is no evidence yet
+    early = compare.compare(before, [], {}, ev, now=taken + timedelta(hours=2))
+    assert early["stability"][0]["verdict"] == "too_early"
+    # Positive findings are never listed as remaining problems
+    ok = compare.compare(dict(before, findings=[{"id": "bottleneck_gpu", "severity": "ok", "title": "Bra"}]),
+                         [{"id": "bottleneck_gpu", "severity": "ok", "title": "Bra"}], {}, [], now=now)
+    assert ok["remaining"] == []
+
+
+# --- forum report -----------------------------------------------------------------
+
+def test_report_bbcode_and_markdown():
+    from flaskhalsen import report
+    hw = {"cpu": {"name": "Ryzen"}, "primary_gpu": {"name": "RTX", "vram_gb": 10},
+          "memory": {"total_gb": 32, "sticks": [{"type": "DDR4", "configured_speed": 2133, "rated_speed_guess": 3200,
+                                                 "serial": "SECRET123"}]}}
+    f = [{"id": "x", "severity": "varning", "title": "RAM går långsamt", "detail": "2133 i stället för 3200"},
+         {"id": "y", "severity": "ok", "title": "Bra"}]
+    bb = report.build(hw, f, [{"cat": "crash"}], "Slå på XMP.", "bbcode")
+    assert "[b]Hittade problem (1)[/b]" in bb and "[*]" in bb and "[quote]Slå på XMP.[/quote]" in bb
+    assert "märkt 3200" in bb and "SECRET123" not in bb
+    mdtext = report.build(hw, f, [], None, "markdown")
+    assert "### Min dator" in mdtext and "[b]" not in mdtext and "AI-sammanfattning" not in mdtext

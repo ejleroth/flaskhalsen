@@ -13,11 +13,21 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import __version__, events, hardware, llm, models, ollama, rules, sensors, store
+from . import __version__, compare, events, hardware, llm, models, ollama, ollama_setup, report, rules, sensors, store
 
 STATIC = Path(__file__).parent / "static"
 app = FastAPI(title="Flaskhalsen", version=__version__)
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
+
+
+@app.middleware("http")
+async def no_stale_ui(request, call_next):
+    # After an update the browser must not keep running an old app.js against the new API.
+    # "no-cache" still allows cheap revalidation (304) via ETag/Last-Modified.
+    response = await call_next(request)
+    if request.url.path == "/" or request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
 
 _cache: dict[str, tuple[float, object]] = {}
 _cache_lock = threading.Lock()
@@ -270,7 +280,73 @@ def api_explain():
     except ollama.OllamaError as e:
         raise HTTPException(502, str(e)) from e
     res["model"] = model
+    store.set_setting("last_explain", {"ts": time.time(), "answer": res.get("answer")})
     return res
+
+
+# --- before/after snapshots ---------------------------------------------------------
+
+def _live_metrics() -> dict:
+    try:
+        return sensors.sample()["metrics"]
+    except Exception:  # noqa: BLE001 - sensors are best effort
+        return {}
+
+
+class SnapIn(BaseModel):
+    label: str = "Före"
+
+
+@app.post("/api/snapshots")
+def api_snapshot_create(body: SnapIn):
+    hw = get_hw(refresh=True)
+    data = compare.make_snapshot(hw, all_findings(), _live_metrics())
+    sid = store.add_snapshot(body.label[:80] or "Före", data)
+    return {"id": sid}
+
+
+@app.get("/api/snapshots")
+def api_snapshots():
+    return store.snapshots()
+
+
+@app.delete("/api/snapshots/{sid}")
+def api_snapshot_delete(sid: int):
+    store.delete_snapshot(sid)
+    return {"ok": True}
+
+
+@app.get("/api/snapshots/{sid}/compare")
+def api_snapshot_compare(sid: int):
+    before = store.snapshot(sid)
+    if not before:
+        raise HTTPException(404, "Ögonblicksbilden finns inte")
+    hw = get_hw(refresh=True)
+    return compare.compare(before, all_findings(), compare.measure(hw, _live_metrics()), get_events(refresh=True))
+
+
+# --- forum report ------------------------------------------------------------------
+
+@app.get("/api/report")
+def api_report(fmt: str = "bbcode"):
+    last = store.get_setting("last_explain") or {}
+    # Only include the AI summary if it is recent enough to match the findings.
+    ai = last.get("answer") if time.time() - (last.get("ts") or 0) < 6 * 3600 else None
+    text = report.build(get_hw(), all_findings(), get_events(), ai,
+                        "markdown" if fmt == "markdown" else "bbcode", f"v{__version__}")
+    return {"text": text, "has_ai": bool(ai)}
+
+
+# --- Ollama setup ------------------------------------------------------------------
+
+@app.post("/api/ollama/install")
+def api_ollama_install():
+    return ollama_setup.install()
+
+
+@app.get("/api/ollama/install")
+def api_ollama_install_state():
+    return ollama_setup.state
 
 
 class ChatIn(BaseModel):

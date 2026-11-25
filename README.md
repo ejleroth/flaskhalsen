@@ -20,6 +20,18 @@ Bidrag till SweClockers-tävlingen *"Gick inte. Nu går det."* (spår: Verktyget
 | Flaskhals | CPU- eller GPU-bunden under spel, fullt VRAM, fullt RAM |
 | System | Energisparläge, full disk, diskhälsa, varm NVMe-disk (strypning), avstängd växlingsfil, gamla drivrutiner/BIOS |
 
+## Före / efter
+
+Spara nuläget med **📸 Spara nuläget** innan du åtgärdar något (slår på XMP, byter kylpasta,
+uppdaterar BIOS). Efteråt visar Flaskhalsen exakt vad som ändrats: lösta och nya fynd,
+RAM-hastighet, temperaturer, ledigt diskutrymme, och antal krascher per vecka före och efter.
+Krascher bedöms först efter ett dygn: noll krascher på två timmar bevisar ingenting.
+
+## Be om hjälp i forumet
+
+**📋 Kopiera till forumet** skapar en färdig rapport med dator, fynd, händelser och AI-sammanfattning,
+i BBCode för SweClockers-forumet eller Markdown för Reddit/Discord. Inga serienummer följer med.
+
 ## AI-modellen anpassar sig efter datorn
 
 Appen upptäcker grafikkort och **riktigt** VRAM (nvidia-smi, eller registret för AMD/Intel: WMI:s
@@ -42,8 +54,9 @@ Du kan alltid välja manuellt.
 Det finns också en enda `Flaskhalsen-x.y.z.exe` (ber om administratör), men den är inte signerad och
 blockeras om Smart App Control är på. Endast Windows 10/11, inte Linux eller macOS.
 
-- För AI-förklaringar och chatt: installera [Ollama](https://ollama.com/download) och klicka
-  *Ladda ner* i AI-kortet. Appen väljer modell efter ditt grafikkort.
+- För AI-förklaringar och chatt behövs [Ollama](https://ollama.com/download). Saknas den visar
+  AI-kortet knappen *Installera Ollama åt mig* (via winget), och sedan *Ladda ner* för modellen.
+  Appen väljer modell efter ditt grafikkort.
 - Valfritt: [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) som
   administratör med *Options → Remote Web Server* påslaget (port 8085) för CPU- och disktemperaturer.
   Utan det används nvidia-smi + psutil.
@@ -94,6 +107,11 @@ AI:n får aldrig gissa från råa siffror. Regelmotorn avgör *vad* som är fel,
   Foundation) och en `.cmd`-startfil. Ingen ny osignerad exe, och den startar fint med SAC påslaget.
   Exe-filen finns kvar som alternativ för den som har SAC avstängt. Att köra den som administratör
   hjälper inte, eftersom SAC stoppar filen innan den ens startar.
+- **Webbläsaren körde gammal kod.** Efter en uppdatering syntes de nya knapparna men gjorde
+  ingenting: sidan var ny men `app.js` kom från webbläsarens cache. Lösning: servern skickar
+  `Cache-Control: no-cache`, så webbläsaren alltid frågar efter senaste versionen.
+- **"0 krascher, bättre!"** Första versionen av före/efter-jämförelsen jublade direkt efter att
+  man sparat, eftersom noll krascher på noll timmar ser ut som en förbättring. Nu väntar den ett dygn.
 - **LibreHardwareMonitor** kräver drivrutinen PawnIO och administratörsrättigheter. Därför fungerar
   appen även utan den.
 

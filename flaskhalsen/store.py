@@ -27,6 +27,7 @@ def conn() -> sqlite3.Connection:
             CREATE TABLE IF NOT EXISTS tokens (ts REAL, model TEXT, prompt_tokens INTEGER,
                 eval_tokens INTEGER, eval_seconds REAL, purpose TEXT);
             CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
+            CREATE TABLE IF NOT EXISTS snapshots (id INTEGER PRIMARY KEY, ts REAL, label TEXT, data TEXT);
         """)
     return _conn
 
@@ -82,6 +83,29 @@ def token_totals() -> dict:
                          SUM(eval_tokens)/NULLIF(SUM(eval_seconds),0) tps FROM tokens GROUP BY model""")
     return {"prompt_tokens": r["p"], "generated_tokens": r["e"], "total_tokens": r["p"] + r["e"],
             "calls": r["n"], "per_model": per_model}
+
+
+# --- snapshots (before/after) ---------------------------------------------------
+
+def add_snapshot(label: str, data: dict) -> int:
+    return execute("INSERT INTO snapshots(ts, label, data) VALUES (?,?,?)",
+                   (time.time(), label, json.dumps(data))).lastrowid
+
+
+def snapshots() -> list[dict]:
+    return query("SELECT id, ts, label FROM snapshots ORDER BY id DESC LIMIT 50")
+
+
+def snapshot(sid: int) -> dict | None:
+    rows = query("SELECT * FROM snapshots WHERE id=?", (sid,))
+    if not rows:
+        return None
+    r = rows[0]
+    return {"id": r["id"], "ts": r["ts"], "label": r["label"], **json.loads(r["data"])}
+
+
+def delete_snapshot(sid: int) -> None:
+    execute("DELETE FROM snapshots WHERE id=?", (sid,))
 
 
 # --- settings -------------------------------------------------------------------

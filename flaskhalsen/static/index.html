@@ -36,11 +36,34 @@
     <h2>Diagnos
       <span class="actions">
         <button class="ghost small" id="btn-diag-refresh">↻ Kör om</button>
+        <button id="btn-report">📋 Kopiera till forumet</button>
         <button class="primary" id="btn-explain">✨ Förklara med AI</button>
       </span>
     </h2>
+    <div id="report-box" class="hidden">
+      <div class="report-head">
+        <label><input type="radio" name="report-fmt" value="bbcode" checked> SweClockers-forumet (BBCode)</label>
+        <label><input type="radio" name="report-fmt" value="markdown"> Reddit/Discord (Markdown)</label>
+        <span id="report-msg" class="hint"></span>
+      </div>
+      <textarea id="report-text" readonly rows="12"></textarea>
+    </div>
     <div id="ai-summary" class="ai-box hidden"></div>
     <div id="findings" class="loading">Analyserar…</div>
+  </section>
+
+  <section class="card" id="card-compare">
+    <h2>Före / efter
+      <span class="actions">
+        <input id="snap-label" placeholder="T.ex. Före XMP" maxlength="80">
+        <button class="primary" id="btn-snap">📸 Spara nuläget</button>
+      </span>
+    </h2>
+    <p class="hint">Spara nuläget innan du åtgärdar något (slår på XMP, byter kylpasta, uppdaterar BIOS).
+      Jämför sedan efteråt och se exakt vad som blev bättre.</p>
+    <div class="sessions"><label>Jämför med: <select id="snap-select"></select></label>
+      <button class="ghost small" id="btn-snap-del" title="Ta bort ögonblicksbilden">🗑</button></div>
+    <div id="compare"></div>
   </section>
 
   <section class="card" id="card-rec">

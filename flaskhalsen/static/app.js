@@ -110,7 +110,9 @@ async function loadModels() {
     </div>
     ${!m.ollama ? `<div class="notice"><strong>Ollama hittades inte.</strong> AI-delen behöver den lokala AI-motorn Ollama
       (gratis). Installera från <a href="https://ollama.com/download" target="_blank" rel="noopener">ollama.com/download</a>,
-      starta den och ladda om sidan. Hårdvarukollen och diagnosen fungerar redan utan AI.</div>` : ""}
+      starta den och ladda om sidan. Hårdvarukollen och diagnosen fungerar redan utan AI.
+      <div style="margin-top:10px"><button class="primary" id="btn-ollama-install">⬇ Installera Ollama åt mig</button>
+      <span class="hint" id="ollama-install-msg">Via winget, Ollamas egen installerare (ca 1 GB).</span></div></div>` : ""}
     ${m.ollama && m.suggested_download ? `<p>Rekommenderad modell för din dator: <strong>${esc(m.suggested_download)}</strong> (~${m.tier.approx_size_gb} GB).</p>
       <button class="primary" id="btn-pull" data-name="${esc(m.suggested_download)}">⬇ Ladda ner ${esc(m.suggested_download)}</button>` : ""}
     <div id="pull-progress"></div>
@@ -126,6 +128,8 @@ async function loadModels() {
     try { await api("/api/models/benchmark", { method: "POST" }); } catch (err) { alert(err.message); }
     loadModels(); loadTokens();
   };
+  const ib = $("#btn-ollama-install");
+  if (ib) ib.onclick = async () => { await api("/api/ollama/install", { method: "POST" }); watchOllamaInstall(); };
   const pb = $("#btn-pull");
   if (pb) pb.onclick = async () => { await api("/api/models/pull", { method: "POST", body: { name: pb.dataset.name } }); watchPull(); };
   if (m.pull && !m.pull.done) watchPull();
@@ -142,6 +146,93 @@ function watchPull() {
     if (p.done) { clearInterval(pullTimer); loadModels(); loadStatus(); }
   }, 1000);
 }
+
+let ollamaTimer = null;
+function watchOllamaInstall() {
+  clearInterval(ollamaTimer);
+  const btn = $("#btn-ollama-install");
+  if (btn) btn.disabled = true;
+  ollamaTimer = setInterval(async () => {
+    const s = await api("/api/ollama/install").catch(() => null);
+    const msg = $("#ollama-install-msg");
+    if (!s) return;
+    if (msg) msg.innerHTML = s.error ? `<span style="color:var(--crit)">${esc(s.error)}</span>` : esc(s.step || "");
+    if (s.done) {
+      clearInterval(ollamaTimer);
+      if (s.error) { if (btn) btn.disabled = false; return; }
+      loadStatus(); loadModels();
+    }
+  }, 1500);
+}
+
+// ---------------------------------------------------------------- forum report
+async function loadReport() {
+  const fmt = document.querySelector('input[name="report-fmt"]:checked').value;
+  const r = await api(`/api/report?fmt=${fmt}`);
+  $("#report-text").value = r.text;
+  let copied = false;
+  try { await navigator.clipboard.writeText(r.text); copied = true; } catch { /* clipboard may be blocked */ }
+  $("#report-msg").textContent = (copied ? "✓ Kopierad! Klistra in i din forumtråd." : "Markera texten och kopiera (Ctrl+C).")
+    + (r.has_ai ? "" : " Tips: klicka \"Förklara med AI\" först så följer AI-sammanfattningen med.");
+}
+$("#btn-report").onclick = async () => {
+  $("#report-box").classList.remove("hidden");
+  $("#report-text").value = "Skapar rapport…";
+  await loadReport().catch((e) => ($("#report-text").value = e.message));
+};
+document.querySelectorAll('input[name="report-fmt"]').forEach((r) => (r.onchange = loadReport));
+
+// ---------------------------------------------------------------- before / after
+const VERDICT = { better: ["✅", "bättre"], worse: ["⚠️", "sämre"], same: ["➖", "oförändrat"], changed: ["🔄", "ändrat"] };
+function fmtVal(v, unit) { return v == null ? "–" : `${typeof v === "number" ? Math.round(v * 10) / 10 : esc(v)}${unit ? " " + unit : ""}`; }
+
+async function loadSnapshots(selectId) {
+  const list = await api("/api/snapshots");
+  const sel = $("#snap-select");
+  sel.innerHTML = list.length ? list.map((s) => `<option value="${s.id}">${esc(s.label)} – ${new Date(s.ts * 1000).toLocaleString("sv-SE")}</option>`).join("")
+    : `<option value="">Ingen sparad än</option>`;
+  $("#btn-snap-del").classList.toggle("hidden", !list.length);
+  const id = selectId || (list[0] && list[0].id);
+  if (id) { sel.value = id; await showCompare(id); } else $("#compare").innerHTML = "";
+}
+
+async function showCompare(id) {
+  const el = $("#compare");
+  el.innerHTML = `<p class="loading">Jämför med nuläget…</p>`;
+  const c = await api(`/api/snapshots/${id}/compare`);
+  const since = c.hours_since < 1 ? "nyss" : c.hours_since < 48 ? `${Math.round(c.hours_since)} timmar sedan` : `${Math.round(c.hours_since / 24)} dagar sedan`;
+  const rows = c.metrics.map((m) => `<tr class="${m.verdict}"><td>${esc(m.label)}</td><td>${fmtVal(m.before, m.unit)}</td><td>→</td>
+      <td><strong>${fmtVal(m.after, m.unit)}</strong></td><td>${VERDICT[m.verdict][0]} ${VERDICT[m.verdict][1]}</td></tr>`).join("");
+  const STAB = { better: "✅ färre", worse: "⚠️ fortsätter", same: "➖ oförändrat", too_early: "⏳ för tidigt att säga, vänta minst ett dygn" };
+  const days = (d) => (d < 1 ? `${Math.round(d * 24)} h` : `${d} d`);
+  const stab = c.stability.map((s) => `<tr class="${s.verdict}"><td>${esc(s.label)}</td>
+      <td>${s.before.count} på ${days(s.before.days)}</td><td>→</td><td><strong>${s.after.count} på ${days(s.after.days)}</strong></td>
+      <td>${STAB[s.verdict]}</td></tr>`).join("");
+  const list = (items, cls, icon) => items.map((f) => `<li class="${cls}">${icon} ${esc(f.title)}${f.history ? ` <span class="hint">(bygger på loggen från de senaste 30 dagarna, se stabiliteten ovan)</span>` : ""}</li>`).join("");
+  el.innerHTML = `<p class="hint">Sparad ${since}. Temperaturer jämförs i vila, så jämför helst under liknande förhållanden.</p>
+    ${rows || stab ? `<table class="compare">${rows}${stab}</table>` : ""}
+    <ul class="compare-list">
+      ${list(c.fixed, "fixed", "✅ Löst:")}
+      ${list(c.new, "new", "🆕 Nytt:")}
+      ${list(c.remaining, "remaining", "⏳ Kvar:")}
+    </ul>
+    ${!c.fixed.length && !c.new.length && !c.metrics.some((m) => m.verdict !== "same") ? `<p class="hint">Ingen skillnad än. Åtgärda något och jämför igen.</p>` : ""}`;
+}
+
+$("#btn-snap").onclick = async (e) => {
+  e.target.disabled = true; e.target.textContent = "Sparar…";
+  try {
+    const r = await api("/api/snapshots", { method: "POST", body: { label: $("#snap-label").value || "Före" } });
+    $("#snap-label").value = "";
+    await loadSnapshots(r.id);
+  } catch (err) { alert(err.message); }
+  e.target.disabled = false; e.target.textContent = "📸 Spara nuläget";
+};
+$("#snap-select").onchange = (e) => e.target.value && showCompare(e.target.value);
+$("#btn-snap-del").onclick = async () => {
+  const id = $("#snap-select").value;
+  if (id && confirm("Ta bort den här ögonblicksbilden?")) { await api(`/api/snapshots/${id}`, { method: "DELETE" }); loadSnapshots(); }
+};
 
 // ---------------------------------------------------------------- findings
 const SEV = { kritisk: "Kritisk", varning: "Varning", info: "Info", ok: "Bra" };
@@ -314,5 +405,6 @@ $("#btn-hw-refresh").onclick = () => loadHardware(true).then(loadModels);
   loadFindings().catch((e) => ($("#findings").textContent = e.message));
   loadEvents().catch((e) => ($("#events").textContent = e.message));
   loadSessions();
+  loadSnapshots().catch((e) => ($("#compare").textContent = e.message));
   if (st && st.recording) watchRecording();
 })();
